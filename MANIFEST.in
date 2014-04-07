@@ -17,3 +17,5 @@ include Makefile
 include README.rst
 include requirements.pip
 include test-requirements.pip
+
+global-exclude __pycache__/*
