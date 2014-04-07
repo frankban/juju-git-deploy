@@ -1,0 +1,9 @@
+.coverage
+.DS_Store
+.emacs*
+.venv
+build
+dist
+juju_git_deploy.egg-info
+MANIFEST
+tags

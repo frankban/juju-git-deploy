@@ -1,0 +1,12 @@
+__pycache__/
+*.py[cod]
+.coverage
+.DS_Store
+.venv*
+~$
+doc/_build
+build/
+dist/
+juju_git_deploy.egg-info
+MANIFEST
+tags
