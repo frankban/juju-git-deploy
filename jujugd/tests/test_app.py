@@ -18,6 +18,8 @@ from unittest import (
     TestCase,
 )
 
+import yaml
+
 from . import helpers
 from .. import app
 
@@ -33,7 +35,7 @@ class TestProgramExit(TestCase):
 class TestPrepare(helpers.ErrorTestsMixin, TestCase):
 
     @contextmanager
-    def patch_all(self):
+    def patch_all(self, series='trusty'):
         """Patch the API and environment calls used by app.prepare."""
         patch_api_address = mock.patch(
             'jujugd.api.get_api_address', return_value='10.0.3.1:17070')
@@ -41,7 +43,7 @@ class TestPrepare(helpers.ErrorTestsMixin, TestCase):
         # to return the environment's password, the second time to fetch the
         # default series.
         patch_parse_jenv = mock.patch(
-            'jujugd.env.parse_jenv', side_effect=['secret!', 'trusty'])
+            'jujugd.env.parse_jenv', side_effect=['secret!', series])
         with patch_api_address:
             with patch_parse_jenv:
                 yield
@@ -49,7 +51,6 @@ class TestPrepare(helpers.ErrorTestsMixin, TestCase):
     def test_collected_info(self):
         # The required info (zip URL, Juju API address, Juju environment
         # password and default series) is returned.
-
         with self.patch_all():
             zip_url, api_address, password, series = app.prepare(
                 'hatched/ghost-charm', 'ec2', None)
@@ -59,6 +60,21 @@ class TestPrepare(helpers.ErrorTestsMixin, TestCase):
         self.assertEqual('10.0.3.1:17070', api_address)
         self.assertEqual('secret!', password)
         self.assertEqual('trusty', series)
+
+    def test_series_not_found_in_jenv(self):
+        # The bootstrap node series is used if the default series is not
+        # included in the jenv file.
+        status_output = yaml.dump({'machines': {'0': {'series': 'saucy'}}})
+        with self.patch_all(series=''):
+            with helpers.patch_call(0, status_output):
+                zip_url, api_address, password, series = app.prepare(
+                    'hatched/ghost-charm', 'ec2', None)
+        self.assertEqual(
+            'https://api.github.com/repos/hatched/ghost-charm/zipball/',
+            zip_url)
+        self.assertEqual('10.0.3.1:17070', api_address)
+        self.assertEqual('secret!', password)
+        self.assertEqual('saucy', series)
 
     def test_invalid_repository(self):
         # A ProgramExit is raised if the Github repository is not valid.

@@ -59,6 +59,8 @@ def prepare(repo, env_name, series):
         password = env.parse_jenv(env_name, env.get_password)
         if series is None:
             series = env.parse_jenv(env_name, env.get_default_series)
+            if not series:
+                series = env.get_bootstrap_node_series(env_name)
     except ValueError as err:
         raise ProgramExit(str(err))
     # Generate the Github zip URL.

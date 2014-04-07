@@ -157,7 +157,7 @@ class TestGetPassword(helpers.ErrorTestsMixin, TestCase):
             env.get_password({})
 
 
-class TestGetDefaultSeries(helpers.ErrorTestsMixin, TestCase):
+class TestGetDefaultSeries(TestCase):
 
     error = 'unable to find the environment default series'
 
@@ -167,12 +167,31 @@ class TestGetDefaultSeries(helpers.ErrorTestsMixin, TestCase):
         self.assertEqual('trusty', series)
 
     def test_empty_value(self):
-        # A ValueError is raised if the default series value is empty.
-        with self.assert_error(ValueError, self.error):
-            env.get_default_series({'default-series': ''})
+        # An empty string is returned if the default series value is empty.
+        series = env.get_default_series({'default-series': ''})
+        self.assertEqual('', series)
 
-    def test_invalid_configuration(self):
-        # A ValueError is returned if the configuration does not include the
+    def test_no_value(self):
+        # An empty string is returned if the configuration does not include the
         # default series.
-        with self.assert_error(ValueError, self.error):
-            env.get_default_series({})
+        series = env.get_default_series({})
+        self.assertEqual('', series)
+
+
+class TestGetBootstrapNodeSeries(helpers.ErrorTestsMixin, TestCase):
+
+    def test_value_found(self):
+        # The bootstrap node series is properly returned.
+        status_output = yaml.dump({'machines': {'0': {'series': 'saucy'}}})
+        with helpers.patch_call(0, output=status_output) as mock_call:
+            series = env.get_bootstrap_node_series('ec2')
+        self.assertEqual('saucy', series)
+        mock_call.assert_called_once_with(
+            'juju', 'status', '-e', 'ec2', '--format', 'yaml')
+
+    def test_status_error(self):
+        # A ValueError is raised if "juju status" exits with an error.
+        expected = 'unable to retrieve the bootstrap node series: bad wolf'
+        with helpers.patch_call(1, error='bad wolf'):
+            with self.assert_error(ValueError, expected):
+                env.get_bootstrap_node_series('ec2')

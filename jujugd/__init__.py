@@ -12,7 +12,7 @@
 
 """Deploy Juju services from local charms hosted on Github."""
 
-VERSION = (0, 1, 0)
+VERSION = (0, 1, 1)
 
 
 def get_version():

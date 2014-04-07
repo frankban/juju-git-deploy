@@ -79,7 +79,18 @@ def get_default_series(config):
     Receive the jenv file YAML decoded bootstrap configuration.
     Raise a ValueError is the OS series cannot be found.
     """
-    series = config.get('default-series')
-    if not series:
-        raise ValueError('unable to find the environment default series')
-    return series
+    return config.get('default-series', '')
+
+
+def get_bootstrap_node_series(env_name):
+    """Return the bootstrap node series parsing the output of "juju status".
+
+    Raise a ValueError if "juju status" exits with an error.
+    """
+    retcode, output, error = utils.call(
+        'juju', 'status', '-e', env_name, '--format', 'yaml')
+    if retcode:
+        msg = 'unable to retrieve the bootstrap node series: {}'.format(error)
+        raise ValueError(msg)
+    contents = yaml.safe_load(output)
+    return contents['machines']['0']['series']
